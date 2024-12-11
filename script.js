@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeFreeArea();
     loadDailyData();
     initializeHeaderMenu();
-    initializeDialogs(); // 添加对话框初始化
+    initializeDialogs();
     
     // 添加日期检查定时器
     dateCheckInterval = setInterval(checkDateChange, 1000 * 60); // 每分钟检查一次
@@ -57,10 +57,221 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(dateCheckInterval);
         }
     });
-    
-    // 添加清除数据功能
-    document.getElementById('clearAllData').addEventListener('click', clearAllData);
 });
+
+// 格式化日期
+function formatDate(date) {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekday = '日一二三四五六'.charAt(date.getDay());
+    return `${month}月${day}日 周${weekday}`;
+}
+
+function formatDateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// 初始化日期显示
+function initializeDate() {
+    const dateElement = document.getElementById('current-date');
+    updateDateDisplay();
+    
+    dateElement.addEventListener('click', () => {
+        // 移除已存在的日期选择器
+        const existingPicker = document.querySelector('.date-picker');
+        if (existingPicker) {
+            existingPicker.remove();
+            return;
+        }
+
+        // 创建日期选择器容器
+        const picker = document.createElement('div');
+        picker.className = 'date-picker';
+        
+        // 创建月份选择器
+        const monthSelect = document.createElement('select');
+        monthSelect.className = 'date-picker-select month';
+        const months = ['一月', '二月', '三月', '四月', '五月', '六月', 
+                       '七月', '八月', '九月', '十月', '十一月', '十二月'];
+        months.forEach((month, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = month;
+            monthSelect.appendChild(option);
+        });
+        
+        // 创建年份选择器
+        const yearSelect = document.createElement('select');
+        yearSelect.className = 'date-picker-select year';
+        const currentYear = currentDate.getFullYear();
+        for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year + '年';
+            yearSelect.appendChild(option);
+        }
+        
+        // 设置当前选中的月份和年份
+        monthSelect.value = currentDate.getMonth();
+        yearSelect.value = currentDate.getFullYear();
+        
+        // 创建日期网格
+        const daysContainer = document.createElement('div');
+        daysContainer.className = 'date-picker-days';
+        
+        // 添加星期标题
+        const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+        weekdays.forEach(day => {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'date-picker-weekday';
+            dayElement.textContent = day;
+            daysContainer.appendChild(dayElement);
+        });
+        
+        // 更新日期网格的函数
+        function updateDaysGrid() {
+            // 清除现有的日期按钮
+            const existingDays = daysContainer.querySelectorAll('.date-picker-day');
+            existingDays.forEach(day => {
+                if (day.parentNode === daysContainer) {
+                    daysContainer.removeChild(day);
+                }
+            });
+            
+            const year = parseInt(yearSelect.value);
+            const month = parseInt(monthSelect.value);
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startPadding = firstDay.getDay();
+            
+            // 添加上个月的填充日期
+            for (let i = 0; i < startPadding; i++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'date-picker-day padding';
+                daysContainer.appendChild(dayElement);
+            }
+            
+            // 添加当月的日期
+            for (let date = 1; date <= lastDay.getDate(); date++) {
+                const dayElement = document.createElement('button');
+                dayElement.className = 'date-picker-day';
+                dayElement.textContent = date;
+                
+                // 检查是否是当前选中的日期
+                const thisDate = new Date(year, month, date);
+                const thisDateKey = formatDateKey(thisDate);
+                if (thisDateKey === currentDateKey) {
+                    dayElement.classList.add('selected');
+                }
+                
+                // 添加点击事件
+                dayElement.addEventListener('click', () => {
+                    const newDate = new Date(year, month, date);
+                    const newDateKey = formatDateKey(newDate);
+                    
+                    // 保存当前日期的数据
+                    saveToLocalStorage();
+                    
+                    // 更新当前日期
+                    currentDate = newDate;
+                    currentDateKey = newDateKey;
+                    
+                    // 确保新日期的数据结构存在
+                    if (!dailyData[currentDateKey]) {
+                        dailyData[currentDateKey] = {
+                            timelineData: {},
+                            freeNotes: [],
+                            frogTasks: [null, null, null]
+                        };
+                    }
+                    
+                    updateDateDisplay();
+                    loadDailyData();
+                    picker.remove();
+                });
+                
+                daysContainer.appendChild(dayElement);
+            }
+        }
+        
+        // 当月份或年份改变时更新日期网格
+        monthSelect.addEventListener('change', updateDaysGrid);
+        yearSelect.addEventListener('change', updateDaysGrid);
+        
+        // 创建按钮容器
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'date-picker-buttons';
+        
+        // 创建今天按钮
+        const todayBtn = document.createElement('button');
+        todayBtn.textContent = '今天';
+        todayBtn.className = 'date-picker-btn today';
+        
+        // 添加今天按钮的点击事件
+        todayBtn.addEventListener('click', () => {
+            const newDate = new Date();
+            const newDateKey = formatDateKey(newDate);
+            
+            // 保存当前日期的数据
+            saveToLocalStorage();
+            
+            // 更新当前日期
+            currentDate = newDate;
+            currentDateKey = newDateKey;
+            
+            // 确保新日期的数据结构存在
+            if (!dailyData[currentDateKey]) {
+                dailyData[currentDateKey] = {
+                    timelineData: {},
+                    freeNotes: [],
+                    frogTasks: [null, null, null]
+                };
+            }
+            
+            updateDateDisplay();
+            loadDailyData();
+            picker.remove();
+        });
+        
+        // 组装日期选择器
+        const selectContainer = document.createElement('div');
+        selectContainer.className = 'date-picker-header';
+        selectContainer.appendChild(yearSelect);
+        selectContainer.appendChild(monthSelect);
+        
+        picker.appendChild(selectContainer);
+        picker.appendChild(daysContainer);
+        picker.appendChild(buttonContainer);
+        buttonContainer.appendChild(todayBtn);
+        
+        // 初始化日期网格
+        updateDaysGrid();
+        
+        // 定位日期选择器
+        const rect = dateElement.getBoundingClientRect();
+        picker.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        picker.style.left = `${rect.left + window.scrollX}px`;
+        
+        document.body.appendChild(picker);
+        
+        // 点击其他地方关闭日期选择器
+        document.addEventListener('click', function closePicker(e) {
+            if (!picker.contains(e.target) && e.target !== dateElement) {
+                picker.remove();
+                document.removeEventListener('click', closePicker);
+            }
+        });
+    });
+}
+
+// 更新日期显示
+function updateDateDisplay() {
+    const dateElement = document.getElementById('current-date');
+    dateElement.textContent = formatDate(currentDate);
+}
 
 // 初始化时间轴
 function initializeTimeline() {
@@ -631,18 +842,6 @@ function clearTask(index) {
     saveToLocalStorage();
 }
 
-// 格式化日期
-function formatDate(date) {
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const weekday = '日一二三四五六'.charAt(date.getDay());
-    return `${month}月${day}日 周${weekday}`;
-}
-
-function formatDateKey(date) {
-    return date.toISOString().split('T')[0];
-}
-
 // 加载当日数据
 function loadDailyData() {
     // 清空现有内容
@@ -738,7 +937,11 @@ function initializeDate() {
         function updateDaysGrid() {
             // 清除现有的日期按钮
             const existingDays = daysContainer.querySelectorAll('.date-picker-day');
-            existingDays.forEach(day => day.remove());
+            existingDays.forEach(day => {
+                if (day.parentNode === daysContainer) {
+                    daysContainer.removeChild(day);
+                }
+            });
             
             const year = parseInt(yearSelect.value);
             const month = parseInt(monthSelect.value);
@@ -760,16 +963,25 @@ function initializeDate() {
                 dayElement.textContent = date;
                 
                 // 检查是否是当前选中的日期
-                const currentDateStr = formatDateKey(currentDate);
-                const thisDateStr = formatDateKey(new Date(year, month, date));
-                if (currentDateStr === thisDateStr) {
+                const thisDate = new Date(year, month, date);
+                const thisDateKey = formatDateKey(thisDate);
+                if (thisDateKey === currentDateKey) {
                     dayElement.classList.add('selected');
                 }
                 
                 // 添加点击事件
                 dayElement.addEventListener('click', () => {
-                    currentDate = new Date(year, month, date);
-                    currentDateKey = formatDateKey(currentDate);
+                    const newDate = new Date(year, month, date);
+                    const newDateKey = formatDateKey(newDate);
+                    
+                    // 保存当前日期的数据
+                    saveToLocalStorage();
+                    
+                    // 更新当前日期
+                    currentDate = newDate;
+                    currentDateKey = newDateKey;
+                    
+                    // 确保新日期的数据结构存在
                     if (!dailyData[currentDateKey]) {
                         dailyData[currentDateKey] = {
                             timelineData: {},
@@ -777,6 +989,7 @@ function initializeDate() {
                             frogTasks: [null, null, null]
                         };
                     }
+                    
                     updateDateDisplay();
                     loadDailyData();
                     picker.remove();
@@ -801,8 +1014,17 @@ function initializeDate() {
         
         // 添加今天按钮的点击事件
         todayBtn.addEventListener('click', () => {
-            currentDate = new Date();
-            currentDateKey = formatDateKey(currentDate);
+            const newDate = new Date();
+            const newDateKey = formatDateKey(newDate);
+            
+            // 保存当前日期的数据
+            saveToLocalStorage();
+            
+            // 更新当前日期
+            currentDate = newDate;
+            currentDateKey = newDateKey;
+            
+            // 确保新日期的数据结构存在
             if (!dailyData[currentDateKey]) {
                 dailyData[currentDateKey] = {
                     timelineData: {},
@@ -810,6 +1032,7 @@ function initializeDate() {
                     frogTasks: [null, null, null]
                 };
             }
+            
             updateDateDisplay();
             loadDailyData();
             picker.remove();
@@ -826,25 +1049,22 @@ function initializeDate() {
         picker.appendChild(buttonContainer);
         buttonContainer.appendChild(todayBtn);
         
+        // 初始化日期网格
+        updateDaysGrid();
+        
         // 定位日期选择器
         const rect = dateElement.getBoundingClientRect();
         picker.style.top = `${rect.bottom + window.scrollY + 5}px`;
         picker.style.left = `${rect.left + window.scrollX}px`;
         
-        // 添加到页面并初始化日期网格
         document.body.appendChild(picker);
-        updateDaysGrid();
         
-        // 点击外部关闭日期选择器
-        document.addEventListener('click', (e) => {
-            if (!picker.contains(e.target) && !dateElement.contains(e.target)) {
+        // 点击其他地方关闭日期选择器
+        document.addEventListener('click', function closePicker(e) {
+            if (!picker.contains(e.target) && e.target !== dateElement) {
                 picker.remove();
+                document.removeEventListener('click', closePicker);
             }
-        });
-        
-        // 阻止事件冒泡
-        picker.addEventListener('click', (e) => {
-            e.stopPropagation();
         });
     });
 }
@@ -852,8 +1072,7 @@ function initializeDate() {
 // 添加更新日期显示的辅助函数
 function updateDateDisplay() {
     const dateElement = document.getElementById('current-date');
-    const formattedDate = formatDate(currentDate);
-    dateElement.textContent = formattedDate;
+    dateElement.textContent = formatDate(currentDate);
 }
 
 // 添加清除数据的函数
