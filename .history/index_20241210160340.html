@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日规划笔记本</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧时间轴区域 -->
+        <div class="timeline-area">
+            <!-- 顶部日期区域 -->
+            <div class="date-header">
+                <div class="current-date" id="current-date">
+                    <!-- 日期将通过 JS 动态生成 -->
+                </div>
+                <h1 class="page-title">今日规划 DAILY PLAN</h1>
+            </div>
+            <div class="timeline-container" id="timeline-container">
+                <!-- 时间轴将通过 JS 动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 右侧区域 -->
+        <div class="right-area">
+            <!-- 三只青蛙区域 -->
+            <div class="frogs-area">
+                <h2 class="frogs-title">今日三要事</h2>
+                <div class="frog-tasks">
+                    <div class="frog-task" data-index="0">
+                        <span class="frog-emoji">🐸</span>
+                        <div class="task-content" data-placeholder="拖拽内容到这里"></div>
+                    </div>
+                    <div class="frog-task" data-index="1">
+                        <span class="frog-emoji">🐸</span>
+                        <div class="task-content" data-placeholder="拖拽内容到这里"></div>
+                    </div>
+                    <div class="frog-task" data-index="2">
+                        <span class="frog-emoji">🐸</span>
+                        <div class="task-content" data-placeholder="拖拽内容到这里"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 自由记录区域 -->
+            <div class="free-area" id="free-area">
+                <!-- 便签将通过 JS 动态生成 -->
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 

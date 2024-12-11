@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日规划笔记本</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧时间轴区域 -->
+        <div class="timeline-area">
+            <!-- 顶部日期区域 -->
+            <div class="date-header">
+                <div class="header-controls">
+                    <div class="current-date" id="current-date">
+                        <!-- 日期将通过 JS 动态生成 -->
+                    </div>
+                    <button class="menu-trigger" id="menuTrigger">⋮</button>
+                    <div class="header-menu" id="headerMenu">
+                        <div class="menu-item" id="showGuide">
+                            <span class="menu-icon">📖</span>
+                            <span>新手指南</span>
+                        </div>
+                        <div class="menu-item" id="showAbout">
+                            <span class="menu-icon">ℹ️</span>
+                            <span>关于笔记本</span>
+                        </div>
+                        <div class="menu-item danger" id="clearAllData">
+                            <span class="menu-icon">🗑️</span>
+                            <span>清除所有数据</span>
+                        </div>
+                    </div>
+                </div>
+                <h1 class="page-title">今日规划 DAILY PLAN</h1>
+            </div>
+            <div class="timeline-container" id="timeline-container">
+                <!-- 时间轴将通过 JS 动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 右侧区域 -->
+        <div class="right-area">
+            <!-- 三只青蛙区域 -->
+            <div class="frogs-area">
+                <h2 class="frogs-title">今日三要事</h2>
+                <div class="frog-tasks">
+                    <div class="frog-task">
+                        <span class="frog-emoji">🐸</span>
+                        <div class="task-content" data-index="0">点击设置重要事项</div>
+                    </div>
+                    <div class="frog-task">
+                        <span class="frog-emoji">🐸</span>
+                        <div class="task-content" data-index="1">点击设置重要事项</div>
+                    </div>
+                    <div class="frog-task">
+                        <span class="frog-emoji">🐸</span>
+                        <div class="task-content" data-index="2">点击设置重要事项</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 自由记录区域 -->
+            <div class="free-area" id="free-area">
+                <!-- 便签将通过 JS 动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 对话框组件 -->
+    <div class="dialog" id="guideDialog">
+        <div class="dialog-content">
+            <h2>📖 新手指南</h2>
+            <div class="dialog-body">
+                <h3>欢迎使用每日规划笔记本！</h3>
+                
+                <h4>🎯 时间管理的核心理念</h4>
+                <ul>
+                    <li>重要且紧急的事情优先处理</li>
+                    <li>每天规划三件最重要的事（三只青蛙）</li>
+                    <li>记录时间线，培养时间意识</li>
+                    <li>定期回顾，持续改进</li>
+                </ul>
+
+                <h4>🔍 如何使用本工具</h4>
+                <ol>
+                    <li><strong>三只青蛙</strong>：
+                        <ul>
+                            <li>在右侧设置每日三个最重要的任务</li>
+                            <li>建议在早上规划，优先完成</li>
+                        </ul>
+                    </li>
+                    <li><strong>时间轴</strong>：
+                        <ul>
+                            <li>点击时间轴空白处添加新记录</li>
+                            <li>记录重要事项、会议、想法等</li>
+                            <li>支持实时编辑和删除</li>
+                        </ul>
+                    </li>
+                    <li><strong>数据管理</strong>：
+                        <ul>
+                            <li>所有数据安全存储在本地</li>
+                            <li>支持撤销操作</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h4>💡 使用建议</h4>
+                <ul>
+                    <li>养成每天记录的习惯</li>
+                    <li>及时记录，不要依赖记忆</li>
+                    <li>定期回顾，总结时间使用模式</li>
+                    <li>关注重要事项的完成情况</li>
+                </ul>
+            </div>
+            <button class="dialog-close">关闭</button>
+        </div>
+    </div>
+
+    <div class="dialog" id="aboutDialog">
+        <div class="dialog-content">
+            <h2>ℹ️ 关于笔记本</h2>
+            <div class="dialog-body">
+                <h1>每日规划笔记本 Daily Planner</h1>
+                
+                <p>一个简单、高效的个人时间管理工具，帮助你更好地规划和记录每一天。</p>
+
+                <h2>✨ 特性</h2>
+                <ul>
+                    <li>📝 实时时间轴记录</li>
+                    <li>🎯 每日三要事管理</li>
+                    <li>🔄 支持撤销操作</li>
+                    <li>💾 本地数据存储</li>
+                    <li>📱 响应式设计</li>
+                </ul>
+
+                <h2>🛠️ 技术栈</h2>
+                <ul>
+                    <li>前端：HTML5 + CSS3 + 原生JavaScript</li>
+                    <li>存储：LocalStorage</li>
+                    <li>设计：响应式布局 + CSS动画</li>
+                </ul>
+
+                <h2>🚀 主要功能</h2>
+                <ul>
+                    <li>时间轴记录：实时记录每日事项</li>
+                    <li>三只青蛙：管理每日三个重要任务</li>
+                    <li>数据持久化：本地存储，保护隐私</li>
+                    <li>操作撤销：支持撤销最近的操作</li>
+                </ul>
+
+                <h2>👨‍💻 关于作者</h2>
+                <p>作者：Jackey</p>
+                <p>微信：ui1945</p>
+                <p>邮箱：1945000000@qq.com</p>
+                <p>欢迎大家提供工具使用的反馈和建议，您的意见是我们改进的动力！</p>
+
+                <h2>🔒 隐私说明</h2>
+                <p>所有数据均存储在本地，不会上传到任何服务器。</p>
+            </div>
+            <button class="dialog-close">关闭</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

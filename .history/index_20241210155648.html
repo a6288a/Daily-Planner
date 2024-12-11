@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日规划笔记本</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧时间轴区域 -->
+        <div class="timeline-area">
+            <!-- 顶部日期区域 -->
+            <div class="date-header">
+                <h1 class="page-title">今日规划 DAILY PLAN</h1>
+                <div class="calendar">
+                    <div class="month-grid">
+                        <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span>
+                        <span>May</span><span>Jun</span><span>Jul</span><span>Aug</span>
+                        <span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+                    </div>
+                    <div class="weekday-row">
+                        <span>一</span><span>二</span><span>三</span><span>四</span>
+                        <span>五</span><span>六</span><span>日</span>
+                    </div>
+                </div>
+            </div>
+            <div class="timeline-container" id="timeline-container">
+                <!-- 时间轴将通过 JS 动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 右侧区域 -->
+        <div class="right-area">
+            <!-- 三只青蛙区域 -->
+            <div class="frogs-area">
+                <h2 class="frogs-title">今日三要事 <span class="frog-emoji">🐸</span></h2>
+                <div class="frog-tasks">
+                    <div class="frog-task" contenteditable="true" data-placeholder="重要任务 1"></div>
+                    <div class="frog-task" contenteditable="true" data-placeholder="重要任务 2"></div>
+                    <div class="frog-task" contenteditable="true" data-placeholder="重要任务 3"></div>
+                </div>
+            </div>
+            
+            <!-- 自由记录区域 -->
+            <div class="free-area" id="free-area">
+                <!-- 便签将通过 JS 动态生成 -->
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 

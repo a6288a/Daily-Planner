@@ -1,0 +1,475 @@
+// 添加日期相关变量
+let currentDate = new Date();
+let currentDateKey = formatDateKey(currentDate);
+
+// 修改数据结构
+let dailyData = JSON.parse(localStorage.getItem('dailyData')) || {};
+if (!dailyData[currentDateKey]) {
+    dailyData[currentDateKey] = {
+        timelineData: {},
+        freeNotes: [],
+        frogTasks: ['', '', '']
+    };
+}
+
+// 初始化页面
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDate();
+    initializeTimeline();
+    initializeFrogTasks();
+    initializeFreeArea();
+    loadDailyData();
+});
+
+// 初始化时间轴
+function initializeTimeline() {
+    const container = document.getElementById('timeline-container');
+    container.innerHTML = ''; // 清空现有内容
+    
+    // 生成6:00-24:00的时间槽
+    for (let hour = 6; hour <= 24; hour++) {
+        const timeSlot = document.createElement('div');
+        timeSlot.className = 'time-slot';
+        
+        const timeLabel = document.createElement('div');
+        timeLabel.className = 'time-label';
+        timeLabel.textContent = `${hour}:00`;
+        
+        const timeContent = document.createElement('div');
+        timeContent.className = 'time-content';
+        timeContent.contentEditable = true;
+        timeContent.dataset.hour = hour;
+        
+        // 加载保存的数据
+        if (dailyData[currentDateKey].timelineData[hour]) {
+            timeContent.textContent = dailyData[currentDateKey].timelineData[hour];
+        }
+        
+        // 保存输入的内容
+        timeContent.addEventListener('blur', (e) => {
+            const hour = e.target.dataset.hour;
+            const oldContent = dailyData[currentDateKey].timelineData[hour];
+            const newContent = e.target.textContent;
+            
+            // 更新时间轴数据
+            dailyData[currentDateKey].timelineData[hour] = newContent;
+            
+            // 更新对应的青蛙任务
+            if (oldContent) {
+                dailyData[currentDateKey].frogTasks = dailyData[currentDateKey].frogTasks.map(task => 
+                    task === oldContent ? newContent : task
+                );
+                updateFrogTasks();
+            }
+            
+            saveToLocalStorage();
+        });
+        
+        // 添加拖拽功能
+        timeContent.draggable = true;
+        timeContent.addEventListener('dragstart', handleDragStart);
+        timeContent.addEventListener('dragover', handleDragOver);
+        timeContent.addEventListener('drop', handleDrop);
+        timeContent.addEventListener('dragend', handleDragEnd);
+        
+        // 防止冒泡
+        timeContent.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
+        timeSlot.appendChild(timeLabel);
+        timeSlot.appendChild(timeContent);
+        container.appendChild(timeSlot);
+    }
+}
+
+// 初始化自由区域
+function initializeFreeArea() {
+    const freeArea = document.getElementById('free-area');
+    let lastClickTime = 0;
+    
+    // 改为双击添加新便签
+    freeArea.addEventListener('click', (e) => {
+        const currentTime = new Date().getTime();
+        const clickTimeDiff = currentTime - lastClickTime;
+        
+        if (clickTimeDiff < 300 && e.target === freeArea) { // 300ms内的双击
+            const rect = freeArea.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            createNote(x, y);
+        }
+        
+        lastClickTime = currentTime;
+    });
+}
+
+// 创建新便签
+function createNote(x, y, content = '') {
+    const note = document.createElement('div');
+    note.className = 'note';
+    
+    const header = document.createElement('div');
+    header.className = 'note-header';
+    header.style.cursor = 'grab';
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-note';
+    deleteBtn.innerHTML = '✕';
+    deleteBtn.addEventListener('click', () => {
+        // 删除便签时，检查是否需要清除青蛙区域的对应内容
+        const noteId = note.dataset.id;
+        dailyData[currentDateKey].frogTasks = dailyData[currentDateKey].frogTasks.map(task => 
+            task && task.noteId === noteId ? null : task
+        );
+        updateFrogTasks();
+        
+        note.remove();
+        const noteIndex = dailyData[currentDateKey].freeNotes.findIndex(n => n.id === noteId);
+        if (noteIndex > -1) {
+            dailyData[currentDateKey].freeNotes.splice(noteIndex, 1);
+            saveToLocalStorage();
+        }
+    });
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'note-content';
+    contentDiv.contentEditable = true;
+    contentDiv.textContent = content;
+    
+    // 保存内容
+    contentDiv.addEventListener('blur', () => {
+        const noteData = {
+            id: note.dataset.id,
+            content: contentDiv.textContent,
+            position: {
+                x: parseFloat(note.style.left),
+                y: parseFloat(note.style.top)
+            }
+        };
+        
+        const existingNoteIndex = dailyData[currentDateKey].freeNotes.findIndex(n => n.id === note.dataset.id);
+        if (existingNoteIndex > -1) {
+            dailyData[currentDateKey].freeNotes[existingNoteIndex] = noteData;
+        } else {
+            dailyData[currentDateKey].freeNotes.push(noteData);
+        }
+        
+        // 更新青蛙区域中对应的内容
+        dailyData[currentDateKey].frogTasks = dailyData[currentDateKey].frogTasks.map(task => {
+            if (task && task.noteId === note.dataset.id) {
+                return { ...task, content: contentDiv.textContent };
+            }
+            return task;
+        });
+        updateFrogTasks();
+        saveToLocalStorage();
+    });
+    
+    header.appendChild(deleteBtn);
+    note.appendChild(header);
+    note.appendChild(contentDiv);
+    
+    // 确保初始位置在边界内
+    const freeArea = document.getElementById('free-area');
+    const maxX = freeArea.clientWidth - 200; // 200px 是便签的最小宽度
+    const maxY = freeArea.clientHeight - 120; // 120px 是便签的最小���度
+    
+    const boundedX = Math.max(0, Math.min(x, maxX));
+    const boundedY = Math.max(0, Math.min(y, maxY));
+    
+    note.style.left = `${boundedX}px`;
+    note.style.top = `${boundedY}px`;
+    note.dataset.id = Date.now().toString();
+    
+    document.getElementById('free-area').appendChild(note);
+    makeDraggable(note);
+    makeNoteDraggableToFrogs(note);
+    
+    return note;
+}
+
+// 修改 makeDraggable 函数
+function makeDraggable(element) {
+    const header = element.querySelector('.note-header');
+    let isDragging = false;
+    let longPressTimer = null;
+    let startX, startY, startLeft, startTop;
+
+    header.addEventListener('mousedown', handleMouseDown);
+
+    function handleMouseDown(e) {
+        if (e.target.classList.contains('delete-note')) return;
+        
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = element.offsetLeft;
+        startTop = element.offsetTop;
+        
+        // 设置长按计时器
+        longPressTimer = setTimeout(() => {
+            isDragging = true;
+            header.style.cursor = 'grabbing';
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp, { once: true });
+        }, 200);
+
+        // 如果用户在长按触发前移动了鼠标，取消长按
+        document.addEventListener('mousemove', cancelLongPress);
+    }
+
+    function cancelLongPress(e) {
+        if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+            clearTimeout(longPressTimer);
+            document.removeEventListener('mousemove', cancelLongPress);
+        }
+    }
+
+    function handleMouseMove(e) {
+        if (!isDragging) return;
+        
+        e.preventDefault();
+        
+        const freeArea = document.getElementById('free-area');
+        const rect = freeArea.getBoundingClientRect();
+        
+        // 计算新位置（相对于起始位置的偏移）
+        let newX = startLeft + (e.clientX - startX);
+        let newY = startTop + (e.clientY - startY);
+        
+        // 添加边界限制
+        const maxX = rect.width - element.offsetWidth;
+        const maxY = rect.height - element.offsetHeight;
+        
+        // 限制在自由区域内
+        newX = Math.max(0, Math.min(newX, maxX));
+        newY = Math.max(0, Math.min(newY, maxY));
+        
+        element.style.left = `${newX}px`;
+        element.style.top = `${newY}px`;
+    }
+
+    function handleMouseUp() {
+        clearTimeout(longPressTimer);
+        document.removeEventListener('mousemove', cancelLongPress);
+        
+        if (isDragging) {
+            isDragging = false;
+            header.style.cursor = 'grab';
+            document.removeEventListener('mousemove', handleMouseMove);
+            
+            // 保存最终位置
+            const noteData = {
+                id: element.dataset.id,
+                content: element.querySelector('.note-content').textContent,
+                position: {
+                    x: parseFloat(element.style.left),
+                    y: parseFloat(element.style.top)
+                }
+            };
+            
+            const existingNoteIndex = dailyData[currentDateKey].freeNotes.findIndex(n => n.id === element.dataset.id);
+            if (existingNoteIndex > -1) {
+                dailyData[currentDateKey].freeNotes[existingNoteIndex] = noteData;
+                saveToLocalStorage();
+            }
+        }
+    }
+
+    // 防止文本选中
+    header.addEventListener('selectstart', (e) => e.preventDefault());
+    
+    // 防止鼠标移出窗口
+    document.addEventListener('mouseleave', () => {
+        if (isDragging) {
+            handleMouseUp();
+        }
+    });
+}
+
+// 处理时间轴拖拽
+function handleDragStart(e) {
+    e.dataTransfer.setData('text/plain', e.target.textContent);
+    e.target.classList.add('dragging');
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    const sourceHour = e.dataTransfer.getData('text/plain');
+    const targetHour = e.target.dataset.hour;
+    
+    // 交换内容
+    const temp = dailyData[currentDateKey].timelineData[sourceHour];
+    dailyData[currentDateKey].timelineData[sourceHour] = dailyData[currentDateKey].timelineData[targetHour];
+    dailyData[currentDateKey].timelineData[targetHour] = temp;
+    
+    // 更新显示
+    loadDailyData();
+}
+
+// 修改青蛙区域的数据结构和处理逻辑
+function initializeFrogTasks() {
+    const frogTasks = document.querySelectorAll('.frog-task');
+    
+    frogTasks.forEach((task, taskIndex) => {
+        task.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            task.classList.add('drag-over');
+        });
+        
+        task.addEventListener('dragleave', () => {
+            task.classList.remove('drag-over');
+        });
+        
+        task.addEventListener('drop', (e) => {
+            e.preventDefault();
+            task.classList.remove('drag-over');
+            
+            const noteId = e.dataTransfer.getData('note-id');
+            const content = e.dataTransfer.getData('text/plain');
+            
+            // 检查便签是否已经在其他青蛙位置
+            const existingIndex = dailyData[currentDateKey].frogTasks.findIndex(t => t && t.noteId === noteId);
+            if (existingIndex !== -1) {
+                // 如果已存在，先清除原来的位置
+                dailyData[currentDateKey].frogTasks[existingIndex] = null;
+            }
+            
+            // 更新新的位置
+            dailyData[currentDateKey].frogTasks[taskIndex] = {
+                noteId: noteId,
+                content: content
+            };
+            
+            updateFrogTasks();
+            saveToLocalStorage();
+        });
+    });
+}
+
+// 格式化日期
+function formatDate(date) {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekday = '日一二三四五六'.charAt(date.getDay());
+    return `${month}月${day}日 周${weekday}`;
+}
+
+function formatDateKey(date) {
+    return date.toISOString().split('T')[0];
+}
+
+// 加载当日数据
+function loadDailyData() {
+    // 清空现有内容
+    document.getElementById('timeline-container').innerHTML = '';
+    document.getElementById('free-area').innerHTML = '';
+    
+    // 加载时间轴数据
+    initializeTimeline();
+    
+    // 加载便签
+    dailyData[currentDateKey].freeNotes.forEach(note => {
+        createNote(note.position.x, note.position.y, note.content);
+    });
+    
+    // 加载青蛙任务
+    const taskContents = document.querySelectorAll('.task-content');
+    dailyData[currentDateKey].frogTasks.forEach((task, index) => {
+        taskContents[index].textContent = task ? task.content : '';
+    });
+}
+
+// 修改保存函数
+function saveToLocalStorage() {
+    localStorage.setItem('dailyData', JSON.stringify(dailyData));
+}
+
+// 初始化日期显示
+function initializeDate() {
+    const dateElement = document.getElementById('current-date');
+    updateDateDisplay();
+    
+    dateElement.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.value = formatDateKey(currentDate); // 设置当前日期为默认值
+        input.style.position = 'absolute';
+        input.style.opacity = '0';
+        input.style.pointerEvents = 'none';
+        document.body.appendChild(input);
+        
+        input.showPicker();
+        
+        input.addEventListener('change', (e) => {
+            currentDate = new Date(e.target.value);
+            currentDateKey = formatDateKey(currentDate);
+            if (!dailyData[currentDateKey]) {
+                dailyData[currentDateKey] = {
+                    timelineData: {},
+                    freeNotes: [],
+                    frogTasks: ['', '', '']
+                };
+            }
+            updateDateDisplay();
+            loadDailyData();
+            input.remove();
+        });
+    });
+}
+
+// 添加更新日期显示的辅助函数
+function updateDateDisplay() {
+    const dateElement = document.getElementById('current-date');
+    const formattedDate = formatDate(currentDate);
+    dateElement.textContent = formattedDate;
+}
+
+// 修改便签的拖拽到青蛙功能
+function makeNoteDraggableToFrogs(note) {
+    const header = note.querySelector('.note-header');
+    let dragTimer;
+
+    header.addEventListener('mousedown', () => {
+        dragTimer = setTimeout(() => {
+            note.setAttribute('draggable', true);
+            note.addEventListener('dragstart', handleNoteDragStart);
+            note.addEventListener('dragend', handleNoteDragEnd);
+        }, 200);
+    });
+
+    header.addEventListener('mouseup', () => {
+        clearTimeout(dragTimer);
+    });
+
+    function handleNoteDragStart(e) {
+        e.dataTransfer.setData('text/plain', note.querySelector('.note-content').textContent);
+        e.dataTransfer.setData('note-id', note.dataset.id);
+        note.classList.add('dragging');
+    }
+
+    function handleNoteDragEnd() {
+        note.classList.remove('dragging');
+        note.removeAttribute('draggable');
+        note.removeEventListener('dragstart', handleNoteDragStart);
+        note.removeEventListener('dragend', handleNoteDragEnd);
+    }
+}
+
+// 添加 handleDragEnd 函数
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+// 更新青蛙任务显示
+function updateFrogTasks() {
+    const taskContents = document.querySelectorAll('.task-content');
+    dailyData[currentDateKey].frogTasks.forEach((task, index) => {
+        taskContents[index].textContent = task ? task.content : '';
+    });
+    saveToLocalStorage();
+} 
